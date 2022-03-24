@@ -4,13 +4,7 @@ source("../headers/header.R")
 # gibbs sampling function
 gibbs_laplace_regression = function(N_draws,x,y,beta_0,tau_0){
   # data manipulation
-  if(is.null(colnames(x))){
-    colnames(x) = paste("x",1:ncol(x),sep="_")
-  }
-  if(!all(abs(x[,1]-1)<.Machine$double.eps)){
-    x = cbind(c(1),x)
-    colnames(x)[1] = "intercept"
-  }
+ 
   data = list(y=y,x=x)
   
   # checking for missing initial values and making them if necessary
@@ -34,4 +28,24 @@ gibbs_laplace_regression = function(N_draws,x,y,beta_0,tau_0){
   # returning
   return(out)
 }
+# test 100
+# gibbs_laplace_regression(100,x,y)
 
+#get 10000 draws
+result = gibbs_laplace_regression(10000,x,y)
+# result$beta
+# result$tau
+apply(result$beta,1,mean)# posterior means of the beta draws
+summary(result$tau)[4] # posterior means of the tau draws
+
+##########################################
+#make univariate 95 intervals for each element of beta#
+mean_ = apply(result$beta,1,mean)
+sd = apply(result$beta,1,sd)
+
+lower = mean_ - 1.96*sd/100
+upper = mean_ + 1.96*sd/100
+ConfidenceInterval = rbind(lower,upper)
+ConfidenceInterval
+
+# I think the column 1,2,5,6,7,8 are non-zero in this Laplace regression.
