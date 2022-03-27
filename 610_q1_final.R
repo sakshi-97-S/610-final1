@@ -1,16 +1,5 @@
 
 set.seed(1234567890)
-x1<-rnorm(500000)
-x <- matrix(x1, nrow=1000, ncol=500, byrow=TRUE)
-x
-
-y<-rnorm(1000)
-length(y)
-y
-
-
-
-
 Rprof(interval = 1e-4, filter.callframe=TRUE)
 # direct inversion
 r_squared_fun_1 = function(x,y){
@@ -24,12 +13,7 @@ r_squared_fun_1 = function(x,y){
   r_squared = SST/SSE_intercept_only
   return(r_squared)
 }
-Rprof(NULL)
-Rprof_summ1= summaryRprof()
-Rprof_summ1
-tt1<-Rprof_summ1$by.total$total.time
 
-Rprof(interval = 1e-4, filter.callframe=TRUE)
 # solve linear system
 r_squared_fun_2 = function(x,y){
   y = y - mean(y)
@@ -43,12 +27,7 @@ r_squared_fun_2 = function(x,y){
   return(r_squared)
   
 }
-Rprof(NULL)
-Rprof_summ2 = summaryRprof()
-Rprof_summ2
-tt2<-Rprof_summ2$by.total$total.time
 
-Rprof(interval = 1e-4, filter.callframe=TRUE)
 # invert using eigen system
 r_squared_fun_3 = function(x,y){
   y = y - mean(y)
@@ -64,12 +43,7 @@ r_squared_fun_3 = function(x,y){
   r_squared = SST/SSE_intercept_only
   return(r_squared)
 }
-Rprof(NULL)
-Rprof_summ3 = summaryRprof()
-Rprof_summ3
-tt3<-Rprof_summ3$by.total$total.time
 
-Rprof(interval = 1e-4, filter.callframe=TRUE)
 # avoid inversion using svd
 r_squared_fun_4 = function(x,y){
   y = y - mean(y)
@@ -82,16 +56,7 @@ r_squared_fun_4 = function(x,y){
   r_squared = SST/SSE_intercept_only
   return(r_squared)
 }
-Rprof(NULL)
-Rprof_summ4 = summaryRprof()
-Rprof_summ4
-Rprof_summ4 = summaryRprof()
-Rprof_summ4
-tt4<-Rprof_summ4$by.total$total.time
 
-
-Rprof(interval = 1e-4, filter.callframe=TRUE)
-# avoid inversion using svd
 # ignore right singular vectors
 r_squared_fun_5 = function(x,y){
   y = y - mean(y)
@@ -104,34 +69,52 @@ r_squared_fun_5 = function(x,y){
   r_squared = SST/SSE_intercept_only
   return(r_squared)
 }
-Rprof(NULL)
-Rprof_summ5 = summaryRprof()
-Rprof_summ5
-tt5<-Rprof_summ5$by.total$total.time
+output = matrix(NA,5,20)
 
-f<-cbind(tt1,tt2,tt3,tt4,tt5)
+r_squared_fun_i = function(i,x,y){
+  if (i == 1){
+    r_squared_fun_1(x,y)
+  }
+  if (i ==2){
+    r_squared_fun_2(x,y)
+  }
+  if (i ==3){
+    r_squared_fun_3(x,y)
+  }
+  if (i ==4){
+    r_squared_fun_4(x,y)
+  }
+  if (i ==5){
+    r_squared_fun_5(x,y)
+  }
+}
 
-Profiling_matrix <- as.data.frame(t(f))
-Profiling_matrix
+totaltime = function(i,x,y){
+  Rprof(filename='q.out',filter.callframes = TRUE,interval=0.01)
+  r_squared_fun_i(i,x,y)
+  Rprof(NULL)
+  summaryRprof('q.out')$by.total[1,1]
+}
 
-rownames(Profiling_matrix)<-c("r_squared_fun_1","r_squared_fun_2","r_squared_fun_3","r_squared_fun_4","r_squared_fun_5")
-print(Profiling_matrix)
+for (j in 1:20){
+  x = matrix(rnorm(1000*500),1000,500)
+  y = rnorm(1000)
+  for (i in 1:5){
+    output[i,j] = totaltime(i,x,y)
+  }
+}
+output
 
-
-#20 columns cannot be created as there are only 11 features when the profiling function is run r squared function.
-# therefore we just obtain 5 by 11 matrix.
-# the row names are given as the function names and the column indicates the total time spent on each function.
-
-summary(Profiling_matrix)
-
-final_matrix<- Profiling_matrix[,-c(1:4,11)]
-final_matrix
-
-rowSums(final_matrix)
-
-#the r_squared_fun_2 takes the least time to compute when compared with the other function.
-#beacuse it runs in very less time.
-#also t(x)%*%x was calculated in function1 itself , so the remaining part was just very simple and small.
-#therefore the computation took less time.
+#function 2 is the best among all
+#because SVD function is time consuming.
+profiling_matrix <- output
+f1 = summary(profiling_matrix[1,])
+f2 = summary(profiling_matrix[2,])
+f3 = summary(profiling_matrix[3,])
+f4 = summary(profiling_matrix[4,])
+f5 = summary(profiling_matrix[5,])
+f = rbind(f1,f2,f3,f4,f5)
+summary_matrix = as.matrix(f)
+summary_matrix
 
 
